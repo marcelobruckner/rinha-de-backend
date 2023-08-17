@@ -1,0 +1,1 @@
+docker push marcelobruckner/rinha-spring-java-api:latest

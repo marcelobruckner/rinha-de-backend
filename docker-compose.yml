@@ -1,0 +1,78 @@
+version: "3.9"
+
+services:
+  java-api01:
+    image: marcelobruckner/rinha-spring-java-api:latest
+    hostname: java-api01
+    environment:
+      - DATABASE_URL=jdbc:postgresql://db-postgresql:5432/rinhadb
+      - DATABASE_USERNAME=admin
+      - DATABASE_PASSWORD=admin
+
+      - HIKARI_CONNECTION_TIMEOUT=40000
+      - HIKARI_MAXIMUM_POOL_SIZE=300
+      - HIKARI_MINIMUM_IDLE=300
+    depends_on:
+      db-postgresql:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "1.0GB"
+
+  java-api02:
+    image: marcelobruckner/rinha-spring-java-api:latest
+    hostname: java-api01
+    environment:
+      - SERVER_PORT=8000
+      - DATABASE_URL=jdbc:postgresql://db-postgresql:5432/rinhadb
+      - DATABASE_USERNAME=admin
+      - DATABASE_PASSWORD=admin
+
+      - HIKARI_CONNECTION_TIMEOUT=40000
+      - HIKARI_MAXIMUM_POOL_SIZE=300
+      - HIKARI_MINIMUM_IDLE=300
+    depends_on:
+      db-postgresql:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "1.0GB"
+
+  db-postgresql:
+    image: postgres:14
+    hostname: db-postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: rinhadb
+    ports:
+      - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.15"
+          memory: "0.4GB"
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - java-api01
+      - java-api02
+    ports:
+      - "9999:9999"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: "0.1GB"
