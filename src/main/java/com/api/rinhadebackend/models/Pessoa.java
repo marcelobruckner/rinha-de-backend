@@ -2,19 +2,17 @@ package com.api.rinhadebackend.models;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import jakarta.persistence.CollectionTable;
+import com.api.rinhadebackend.models.converters.StringListConverter;
+
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "pessoas")
@@ -24,28 +22,31 @@ public class Pessoa implements Serializable {
   private static final long serialVersionUID = 1L;
 
   @Id
-  @GeneratedValue(strategy = GenerationType.AUTO)
   private UUID id;
+
   @Column(nullable = false, unique = true, length = 32)
   private String apelido;
+
   @Column(nullable = false, length = 100)
   private String nome;
+
+  @Pattern(regexp = "^(\\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$")
   @Column(nullable = false)
-  private LocalDate nascimento;
-  @ElementCollection
-  @CollectionTable(name = "pessoas_stacks", joinColumns = @JoinColumn(name = "pessoa_id"))
-  @Column(nullable = true, length = 32)
+  private String nascimento;
+
+  @Column(nullable = true)
+  @Convert(converter = StringListConverter.class)
   private List<String> stack;
 
   public Pessoa() {
 
   }
 
-  public Pessoa(UUID id, String apelido, String nome, LocalDate nascimento) {
-    this.id = id;
+  public Pessoa(String apelido, String nome, String nascimento, List<String> stack) {
     this.apelido = apelido;
     this.nome = nome;
     this.nascimento = nascimento;
+    this.stack = stack;
   }
 
   public UUID getId() {
@@ -72,11 +73,11 @@ public class Pessoa implements Serializable {
     this.nome = nome;
   }
 
-  public LocalDate getNascimento() {
+  public String getNascimento() {
     return nascimento;
   }
 
-  public void setNascimento(LocalDate nascimento) {
+  public void setNascimento(String nascimento) {
     this.nascimento = nascimento;
   }
 
@@ -86,11 +87,6 @@ public class Pessoa implements Serializable {
 
   public void setStack(List<String> stack) {
     this.stack = stack;
-  }
-
-  @Override
-  public String toString() {
-    return "Pessoa [id=" + id + ", apelido=" + apelido + ", nome=" + nome + ", nascimento=" + nascimento + "]";
   }
 
 }

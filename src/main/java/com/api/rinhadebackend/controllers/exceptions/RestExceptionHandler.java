@@ -19,14 +19,29 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import com.api.rinhadebackend.services.exceptions.NotFoundException;
 import com.api.rinhadebackend.services.exceptions.ParameterAbsentException;
 import com.api.rinhadebackend.services.exceptions.ParameterTypeNotSupportedException;
 import com.api.rinhadebackend.services.exceptions.UnprocessableEntityException;
+
+import jakarta.validation.ConstraintViolationException;
 
 @RestControllerAdvice
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         @Autowired
         private MessageSource messageSource;
+
+        @ExceptionHandler(NotFoundException.class)
+        protected ResponseEntity<Object> handleNotFound(NotFoundException ex,
+                        WebRequest request) {
+                HttpStatus status = HttpStatus.NOT_FOUND;
+                ProblemType problemType = ProblemType.NOT_FOUND;
+                String detail = ex.getMessage();
+
+                Problem problem = createProblemBuilder(status, problemType, detail, request).userMessage(detail)
+                                .build();
+                return handleExceptionInternal(ex, problem, new HttpHeaders(), status, request);
+        }
 
         @ExceptionHandler(ParameterTypeNotSupportedException.class)
         protected ResponseEntity<Object> handleParameterTypeNotSupported(ParameterTypeNotSupportedException ex,
@@ -55,6 +70,18 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         protected ResponseEntity<Object> handleUnprocessableEntity(UnprocessableEntityException ex,
                         WebRequest request) {
                 HttpStatus status = HttpStatus.UNPROCESSABLE_ENTITY;
+                ProblemType problemType = ProblemType.PARAMETRO_INVALIDO;
+                String detail = ex.getMessage();
+
+                Problem problem = createProblemBuilder(status, problemType, detail, request).userMessage(detail)
+                                .build();
+                return handleExceptionInternal(ex, problem, new HttpHeaders(), status, request);
+        }
+
+        @ExceptionHandler(ConstraintViolationException.class)
+        protected ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex,
+                        WebRequest request) {
+                HttpStatus status = HttpStatus.BAD_REQUEST;
                 ProblemType problemType = ProblemType.PARAMETRO_INVALIDO;
                 String detail = ex.getMessage();
 

@@ -5,12 +5,12 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.api.rinhadebackend.dtos.mapper.PessoaMapper;
-import com.api.rinhadebackend.dtos.pessoa.PessoaRequestDto;
-import com.api.rinhadebackend.dtos.pessoa.PessoaResponseDto;
+import com.api.rinhadebackend.dtos.pessoa.PessoaDto;
 import com.api.rinhadebackend.models.Pessoa;
 import com.api.rinhadebackend.repositories.PessoaRepository;
 import com.api.rinhadebackend.services.exceptions.NotFoundException;
@@ -21,71 +21,61 @@ import com.api.rinhadebackend.services.exceptions.UnprocessableEntityException;
 @Service
 public class PessoaService {
 
-  private final PessoaRepository pessoaRepository;
-  private final PessoaMapper pessoaMapper;
+  @Autowired
+  private PessoaRepository pessoaRepository;
 
-  public PessoaService(PessoaRepository pessoaRepository, PessoaMapper pessoaMapper) {
-    this.pessoaRepository = pessoaRepository;
-    this.pessoaMapper = pessoaMapper;
-  }
+  @Autowired
+  private PessoaMapper pessoaMapper;
 
-  public Pessoa save(PessoaRequestDto pessoaCreateDto) {
+  public Pessoa save(PessoaDto pessoaDto) {
 
-    if (isNumeric(pessoaCreateDto.apelido())) {
+    if (isNumeric(pessoaDto.apelido())) {
       throw new ParameterTypeNotSupportedException("O apelido não pode ser numérico");
     }
 
-    if (isNumeric(pessoaCreateDto.nome())) {
+    if (isNumeric(pessoaDto.nome())) {
       throw new ParameterTypeNotSupportedException("O nome não pode ser numérico");
     }
 
-    if (pessoaCreateDto.stack() != null) {
-      pessoaCreateDto.stack().forEach(stack -> {
+    if (pessoaDto.stack() != null) {
+      pessoaDto.stack().forEach(stack -> {
         if (isNumeric(stack)) {
           throw new ParameterTypeNotSupportedException("A stack não pode ser numérica");
         }
       });
     }
 
+    var pessoa = pessoaMapper.toEntity(pessoaDto);
+    pessoa.setId(UUID.randomUUID());
     try {
-      return pessoaRepository.save(pessoaMapper.toEntity(pessoaCreateDto));
+      return pessoaRepository.save(pessoa);
     } catch (DataIntegrityViolationException ex) {
-      throw new UnprocessableEntityException("Apelido " + pessoaCreateDto.apelido() + " em uso");
+      throw new UnprocessableEntityException("Apelido " + pessoaDto.apelido() + " em uso");
 
     }
   }
 
-  public List<PessoaResponseDto> list() {
-    var pessoas = pessoaRepository.findAll();
-    return pessoas.stream()
-        .map(pessoaMapper::toResponseDto).collect(Collectors.toList());
-  }
-
-  public List<PessoaResponseDto> findAllBySearchTerm(String searchTerm) {
-    if (searchTerm.isEmpty()) {
+  public List<PessoaDto> findAllBySearchTerm(String searchTerm) {
+    if (searchTerm == null || searchTerm.isBlank()) {
       throw new ParameterAbsentException("Algum termo deve ser informado.");
     }
     var pessoas = pessoaRepository.findAllBySearchTerm(searchTerm.toLowerCase());
     return pessoas.stream()
-        .map(pessoaMapper::toResponseDto).collect(Collectors.toList());
+        .map(pessoaMapper::toDto).collect(Collectors.toList());
   }
 
   public Long countPeople() {
     return pessoaRepository.count();
   }
 
-  public PessoaResponseDto findById(UUID pessoaId) {
+  public PessoaDto findById(UUID pessoaId) {
     Optional<Pessoa> pessoaOpt = pessoaRepository.findById(pessoaId);
 
-    return pessoaMapper.toResponseDto(pessoaOpt.orElseThrow(() -> new NotFoundException(pessoaId.toString())));
+    return pessoaMapper.toDto(pessoaOpt.orElseThrow(() -> new NotFoundException(pessoaId.toString())));
   }
 
   private boolean isNumeric(String str) {
     return str != null && str.matches("[0-9.]+");
-  }
-
-  public void deleteAll() {
-    pessoaRepository.deleteAll();
   }
 
 }

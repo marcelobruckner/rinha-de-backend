@@ -5,15 +5,17 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.api.rinhadebackend.models.Pessoa;
 
 public interface PessoaRepository extends JpaRepository<Pessoa, UUID> {
 
-	@Query(nativeQuery = true, value = "select  distinct p.* from pessoas p "
-			+ "left join pessoas_stacks ps on (p.id = ps.pessoa_id) "
-			+ "where lower(p.apelido) LIKE lower(concat('%', :searchTerm , '%')) "
-			+ "or lower(p.nome) LIKE lower(concat('%', :searchTerm , '%')) "
-			+ "or lower(ps.stack) LIKE lower(concat('%', :searchTerm , '%')) " + "limit 50")
-	List<Pessoa> findAllBySearchTerm(String searchTerm);
+	@Query(nativeQuery = true, value = "select p.* from pessoas p " +
+			"where p.apelido like %:term% or " +
+			"p.nome like %:term% or " +
+			"p.nascimento like %:term% or " +
+			"p.stack like %:term% " +
+			"LIMIT 50")
+	List<Pessoa> findAllBySearchTerm(@Param("term") String term);
 }

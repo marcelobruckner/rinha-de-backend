@@ -4,7 +4,8 @@ import lombok.Getter;
 
 @Getter
 public enum ProblemType {
-    PARAMETRO_INVALIDO("Parâmetro inválido");
+    PARAMETRO_INVALIDO("Parâmetro inválido"),
+    NOT_FOUND("Entidade não encontrada");
 
     private String title;
 
