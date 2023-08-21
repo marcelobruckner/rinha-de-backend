@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
@@ -30,6 +31,8 @@ import jakarta.validation.ConstraintViolationException;
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         @Autowired
         private MessageSource messageSource;
+
+
 
         @ExceptionHandler(NotFoundException.class)
         protected ResponseEntity<Object> handleNotFound(NotFoundException ex,
@@ -90,6 +93,16 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
                 return handleExceptionInternal(ex, problem, new HttpHeaders(), status, request);
         }
 
+        @Override
+        protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+                HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
+                ProblemType problemType = ProblemType.PARAMETRO_INVALIDO;
+                String detail = "Algum termo deve ser informado.";
+
+                Problem problem = createProblemBuilder(httpStatus, problemType, detail, request).userMessage(detail)
+                        .build();
+                return handleExceptionInternal(ex, problem, new HttpHeaders(), status, request);
+        }
         @Override
         protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
                         HttpHeaders headers, HttpStatusCode status, WebRequest request) {

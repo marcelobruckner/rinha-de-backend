@@ -6,7 +6,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.api.rinhadebackend.dtos.mapper.PessoaMapper;
@@ -15,8 +14,9 @@ import com.api.rinhadebackend.models.Pessoa;
 import com.api.rinhadebackend.repositories.PessoaRepository;
 import com.api.rinhadebackend.services.exceptions.NotFoundException;
 import com.api.rinhadebackend.services.exceptions.ParameterAbsentException;
-import com.api.rinhadebackend.services.exceptions.ParameterTypeNotSupportedException;
 import com.api.rinhadebackend.services.exceptions.UnprocessableEntityException;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class PessoaService {
@@ -27,30 +27,15 @@ public class PessoaService {
   @Autowired
   private PessoaMapper pessoaMapper;
 
+  @Transactional()
   public Pessoa save(PessoaDto pessoaDto) {
-
-    if (isNumeric(pessoaDto.apelido())) {
-      throw new ParameterTypeNotSupportedException("O apelido não pode ser numérico");
-    }
-
-    if (isNumeric(pessoaDto.nome())) {
-      throw new ParameterTypeNotSupportedException("O nome não pode ser numérico");
-    }
-
-    if (pessoaDto.stack() != null) {
-      pessoaDto.stack().forEach(stack -> {
-        if (isNumeric(stack)) {
-          throw new ParameterTypeNotSupportedException("A stack não pode ser numérica");
-        }
-      });
-    }
 
     var pessoa = pessoaMapper.toEntity(pessoaDto);
     pessoa.setId(UUID.randomUUID());
     try {
       return pessoaRepository.save(pessoa);
-    } catch (DataIntegrityViolationException ex) {
-      throw new UnprocessableEntityException("Apelido " + pessoaDto.apelido() + " em uso");
+    } catch (RuntimeException ex) {
+      throw new UnprocessableEntityException(ex.getMessage());
 
     }
   }
@@ -72,10 +57,6 @@ public class PessoaService {
     Optional<Pessoa> pessoaOpt = pessoaRepository.findById(pessoaId);
 
     return pessoaMapper.toDto(pessoaOpt.orElseThrow(() -> new NotFoundException(pessoaId.toString())));
-  }
-
-  private boolean isNumeric(String str) {
-    return str != null && str.matches("[0-9.]+");
   }
 
 }
